@@ -1,9 +1,9 @@
 package com.example.androidsideproject.model
 
-data class Movie(
+data class MovieWithGenres(
     val id: Int,
     val title: String,
-    val genreIds: List<Int>,
     val overview: String,
-    val originalLanguage: String
+    val originalLanguage: String,
+    val genreNames: List<String>
 )
