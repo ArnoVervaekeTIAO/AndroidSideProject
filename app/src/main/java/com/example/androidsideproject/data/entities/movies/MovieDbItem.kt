@@ -9,17 +9,31 @@ data class MovieDbItem(
     @PrimaryKey
     var id: Int,
     var title: String,
+    var overview: String,
+    var originalLanguage: String
 )
 
 fun Movie.getAsMovieDbItem(): MovieDbItem = MovieDbItem(
     id = id,
     title = title,
+    overview = overview,
+    originalLanguage = originalLanguage
 )
 
 
-fun MovieDbItem.asDomainMovie(): Movie = Movie(
+fun MovieDbItem.asDomainMovie(genreIds: List<Int>): Movie = Movie(
     id = id,
     title = title,
+    overview = overview,
+    originalLanguage = originalLanguage,
+    genreIds = genreIds
 )
 
-fun List<MovieDbItem>.asDomainMovies() = map { it.asDomainMovie() }
+fun List<MovieDbItem>.asDomainMovies(crossRefs: List<MovieGenreCrossRef>): List<Movie> {
+    val genreMap = crossRefs.groupBy({ it.movieId }, { it.genreId })
+
+    return map { movieDbItem ->
+        val genreIds = genreMap[movieDbItem.id] ?: emptyList()
+        movieDbItem.asDomainMovie(genreIds)
+    }
+}

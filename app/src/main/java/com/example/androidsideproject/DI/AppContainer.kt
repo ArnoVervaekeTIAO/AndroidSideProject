@@ -2,8 +2,11 @@ package com.example.androidsideproject.DI
 
 import android.content.Context
 import com.example.androidsideproject.data.database.MainDatabase
+import com.example.androidsideproject.data.entities.genre.CachingGenreRepository
+import com.example.androidsideproject.data.entities.genre.GenreRepository
 import com.example.androidsideproject.data.entities.movies.CachingMovieRepository
 import com.example.androidsideproject.data.entities.movies.MovieRepository
+import com.example.androidsideproject.network.genre.GenreApiService
 import com.example.androidsideproject.network.movie.MovieApiService
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.serialization.json.Json
@@ -12,6 +15,7 @@ import retrofit2.Retrofit
 
 interface AppContainer {
     val movieRepository: MovieRepository
+    val genreRepository: GenreRepository
 }
 
 class DefaultAppContainer(private val applicationContext: Context) : AppContainer {
@@ -34,7 +38,21 @@ class DefaultAppContainer(private val applicationContext: Context) : AppContaine
     override val movieRepository: MovieRepository by lazy {
         CachingMovieRepository(
             MainDatabase.getDatabase(context = applicationContext).movieDao(),
-            retrofitMovieService
+            MainDatabase.getDatabase(context = applicationContext).genreDao(),
+            retrofitMovieService,
+            retrofitGenreService
+        )
+    }
+
+
+    private val retrofitGenreService: GenreApiService by lazy {
+        retrofit.create(GenreApiService::class.java)
+    }
+
+    override val genreRepository: GenreRepository by lazy {
+        CachingGenreRepository(
+            MainDatabase.getDatabase(context = applicationContext).genreDao(),
+            retrofitGenreService
         )
     }
 }

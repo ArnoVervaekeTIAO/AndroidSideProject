@@ -17,9 +17,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.androidsideproject.data.entities.movies.MovieRepositoryMock
-import com.example.androidsideproject.model.Movie
+import com.example.androidsideproject.model.MovieWithGenres
 import com.example.androidsideproject.ui.theme.MainTheme
 
 class MovieListActivity : ComponentActivity() {
@@ -63,16 +61,19 @@ fun MovieListScreen(viewModel: MovieViewModel) {
 
 
 @Composable
-fun MovieItem(movie: Movie) {
+fun MovieItem(movie: MovieWithGenres) {
     Column {
         Text(text = "ID: ${movie.id}")
         Text(text = "Title: ${movie.title}")
+        Text(text = "Overview: ${movie.overview}")
+        Text(text = "Language: ${movie.originalLanguage}")
+        Text(text = "Genres: ${movie.genreNames.joinToString(", ")}")
         Button(onClick = { /* Handle movie item click */ }) {
             Text(text = "View Details")
         }
     }
 }
-
+/*
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
@@ -80,3 +81,4 @@ fun DefaultPreview() {
         MovieListScreen(viewModel = MovieViewModel(MovieRepositoryMock()))
     }
 }
+ */
