@@ -5,4 +5,20 @@
     <string name="watchlist_page_title">My Watchlist</string>
     <string name="mymovies_page_title">My Movies</string>
     <string name="movieapp_page_title">Movie App</string>
+    <string name="no_movies_found">No movies found with the selected filters</string>
+    <string name="filter_movies">Filter Movies</string>
+    <string name="select_language">Select Language:</string>
+    <string name="select_genre">Select Genre:</string>
+    <string name="all">All</string>
+    <string name="apply">Apply</string>
+    <string name="cancel">Cancel</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="swipe_hint">Swipe left or right to browse movies</string>
+    <string name="add_to_watchlist">Add to Watchlist</string>
+    <string name="language">Language:</string>
+    <string name="genres">Genres:</string>
+    <string name="filter_by_language">Filter by Language</string>
+    <string name="filter_by_genre">Filter by Genre</string>
+    <string name="all_options">All</string>
 </resources>
