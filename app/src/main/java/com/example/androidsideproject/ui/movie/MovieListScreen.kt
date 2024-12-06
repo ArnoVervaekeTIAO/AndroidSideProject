@@ -17,6 +17,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.example.androidsideproject.R
 import com.example.androidsideproject.model.MovieWithGenres
 import com.example.androidsideproject.ui.theme.MainTheme
 
@@ -43,8 +45,6 @@ fun MovieListScreen(viewModel: MovieViewModel) {
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start,
     ) {
-        Text(text = "Movie List", style = MaterialTheme.typography.headlineSmall)
-
         if (movies.isNotEmpty()) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
@@ -54,7 +54,7 @@ fun MovieListScreen(viewModel: MovieViewModel) {
                 }
             }
         } else {
-            Text(text = "Loading movies...")
+            Text(text = stringResource(id = R.string.loading_movies))
         }
     }
 }

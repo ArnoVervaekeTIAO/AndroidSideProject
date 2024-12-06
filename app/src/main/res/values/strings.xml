@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">AndroidSideProject</string>
+    <string name="loading_movies">Loading movies…</string>
+    <string name="browse_page_title">Browse Movies</string>
+    <string name="watchlist_page_title">My Watchlist</string>
+    <string name="mymovies_page_title">My Movies</string>
+    <string name="movieapp_page_title">Movie App</string>
 </resources>
