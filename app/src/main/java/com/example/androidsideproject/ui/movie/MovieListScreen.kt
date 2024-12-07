@@ -98,19 +98,19 @@ fun MovieCarouselWithFilter(movies: List<MovieView>, isLandscape: Boolean) {
                 TopAppBar(
                     title = { Text("") },
                     actions = {
-                        Box(
+                        IconButton(
+                            onClick = { showFilterDialog = true },
                             modifier = Modifier
                                 .padding(end = 16.dp)
                                 .size(60.dp)
                                 .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                                .padding(12.dp)
                         ) {
                             Icon(
                                 Icons.Filled.FilterList,
                                 contentDescription = stringResource(id = R.string.filter_movies),
                                 modifier = Modifier
                                     .size(36.dp)
-                                    .align(Alignment.Center)
+                                    .align(Alignment.CenterVertically)
                             )
                         }
                     }
