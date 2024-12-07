@@ -98,26 +98,23 @@ fun MovieCarouselWithFilter(movies: List<MovieView>, isLandscape: Boolean) {
                 TopAppBar(
                     title = { Text("") },
                     actions = {
-                        // Manually create a Box to control the icon and circle size
                         Box(
                             modifier = Modifier
-                                .padding(end = 16.dp)  // Padding applied to the Box (outside of the circle)
-                                .size(60.dp)           // Set the size of the circle
-                                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)  // Circle around the icon
-                                .padding(12.dp)        // Padding to ensure the icon isn't touching the edge of the circle
+                                .padding(end = 16.dp)
+                                .size(60.dp)
+                                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                .padding(12.dp)
                         ) {
                             Icon(
                                 Icons.Filled.FilterList,
                                 contentDescription = stringResource(id = R.string.filter_movies),
                                 modifier = Modifier
-                                    .size(36.dp)  // Adjust icon size here (inside the circle)
-                                    .align(Alignment.Center)  // Ensure the icon is centered within the circle
+                                    .size(36.dp)
+                                    .align(Alignment.Center)
                             )
                         }
                     }
                 )
-
-
             }
         }
     ) { paddingValues ->
