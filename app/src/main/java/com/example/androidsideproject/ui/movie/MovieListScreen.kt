@@ -41,7 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.androidsideproject.R
-import com.example.androidsideproject.model.MovieWithGenres
+import com.example.androidsideproject.model.MovieView
 import com.example.androidsideproject.ui.theme.MainTheme
 import kotlinx.coroutines.launch
 
@@ -76,7 +76,7 @@ fun MovieListScreen(viewModel: MovieViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MovieCarouselWithFilter(movies: List<MovieWithGenres>) {
+fun MovieCarouselWithFilter(movies: List<MovieView>) {
     var filteredMovies by remember { mutableStateOf(movies) }
     val pagerState = rememberPagerState(pageCount = { filteredMovies.size })
     val coroutineScope = rememberCoroutineScope()
@@ -168,7 +168,7 @@ fun MovieCarouselWithFilter(movies: List<MovieWithGenres>) {
             movies = movies,
             onApplyFilter = { selectedLanguage, selectedGenre ->
                 filteredMovies = movies.filter { movie ->
-                    (selectedLanguage == null || movie.originalLanguage == selectedLanguage) &&
+                    (selectedLanguage == null || movie.language == selectedLanguage) &&
                             (selectedGenre == null || selectedGenre in movie.genreNames)
                 }
                 showFilterDialog = false
@@ -180,11 +180,11 @@ fun MovieCarouselWithFilter(movies: List<MovieWithGenres>) {
 
 @Composable
 fun FilterDialog(
-    movies: List<MovieWithGenres>,
+    movies: List<MovieView>,
     onApplyFilter: (String?, String?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val languages = remember { movies.map { it.originalLanguage }.distinct() }
+    val languages = remember { movies.map { it.language }.distinct() }
     val genres = remember { movies.flatMap { it.genreNames }.distinct() }
 
     var selectedLanguage by remember { mutableStateOf<String?>(null) }
@@ -258,7 +258,7 @@ fun DropdownMenu(
 }
 
 @Composable
-fun MovieCard(movie: MovieWithGenres) {
+fun MovieCard(movie: MovieView) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -271,7 +271,7 @@ fun MovieCard(movie: MovieWithGenres) {
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Text(
-            text = "${stringResource(id = R.string.language)} ${movie.originalLanguage}",
+            text = "${stringResource(id = R.string.language)} ${movie.language}",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(bottom = 8.dp)
         )

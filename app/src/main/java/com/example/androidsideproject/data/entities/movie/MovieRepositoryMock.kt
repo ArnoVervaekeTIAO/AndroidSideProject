@@ -1,4 +1,4 @@
-package com.example.androidsideproject.data.entities.movies
+package com.example.androidsideproject.data.entities.movie
 
 import com.example.androidsideproject.model.Movie
 import kotlinx.coroutines.flow.flow

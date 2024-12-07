@@ -1,12 +1,16 @@
-package com.example.androidsideproject.data.entities.movies
+package com.example.androidsideproject.data.entities.movie
 
 import android.util.Log
 import com.example.androidsideproject.BuildConfig
 import com.example.androidsideproject.data.entities.genre.GenreDao
 import com.example.androidsideproject.data.entities.genre.getAsGenreDbItem
+import com.example.androidsideproject.data.entities.language.LanguageDao
+import com.example.androidsideproject.data.entities.language.getAsLanguageDbItem
 import com.example.androidsideproject.model.Movie
 import com.example.androidsideproject.network.genre.GenreApiService
 import com.example.androidsideproject.network.genre.getGenresAsFlow
+import com.example.androidsideproject.network.language.LanguageApiService
+import com.example.androidsideproject.network.language.getLanguagesAsFlow
 import com.example.androidsideproject.network.movie.MovieApiService
 import com.example.androidsideproject.network.movie.getPopularMoviesAsFlow
 import kotlinx.coroutines.CoroutineScope
@@ -25,23 +29,25 @@ interface MovieRepository {
 class CachingMovieRepository(
     private val movieDao: MovieDao,
     private val genreDao: GenreDao,
+    private val languageDao: LanguageDao,
     private val movieApiService: MovieApiService,
-    private val genreApiService: GenreApiService
+    private val genreApiService: GenreApiService,
+    private val languageApiService: LanguageApiService
 ) : MovieRepository {
 
-    private val coroutineScope = CoroutineScope(Dispatchers.IO) // Create a CoroutineScope for background tasks
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     init {
-        // Start fetching data in the background
         coroutineScope.launch {
-            refresh() // Fetch and insert genres and movies asynchronously
+            refresh()
         }
     }
 
     override fun getMovies(): Flow<List<Movie>> {
         return movieDao.getMovies().map { movieDbItems ->
-            val crossRefs = movieDao.getAllMovieGenreCrossRefs()
-            movieDbItems.asDomainMovies(crossRefs)
+            val genreCrossRefs = movieDao.getAllMovieGenreCrossRefs()
+            val languageCrossRefs = movieDao.getAllMovieLanguageCrossRefs()
+            movieDbItems.asDomainMovies(genreCrossRefs, languageCrossRefs)
         }.onEach {
             if (it.isEmpty()) {
                 refresh()
@@ -51,10 +57,15 @@ class CachingMovieRepository(
 
     override suspend fun insert(item: Movie) {
         movieDao.insertMovie(item.getAsMovieDbItem())
-        val crossRefs = item.genreIds.map { genreId ->
+        val genreCrossRefs = item.genreIds.map { genreId ->
             MovieGenreCrossRef(movieId = item.id, genreId = genreId)
         }
-        movieDao.insertMovieGenreCrossRefs(crossRefs)
+        val languageCrossRef = MovieLanguageCrossRef(
+            movieId = item.id,
+            languageId = item.originalLanguage
+        )
+        movieDao.insertMovieGenreCrossRefs(genreCrossRefs)
+        movieDao.insertMovieLanguageCrossRefs(languageCrossRef)
     }
 
     override suspend fun refresh() {
@@ -69,6 +80,16 @@ class CachingMovieRepository(
                 }
             }
 
+            languageApiService.getLanguagesAsFlow(BuildConfig.API_KEY).collect { languages ->
+                for (language in languages)
+                {
+                    val existingLanguage = languageDao.getLanguageById(language.id)
+                    if (existingLanguage == null) {
+                        languageDao.insertLanguage(language.getAsLanguageDbItem())
+                    }
+                }
+            }
+
             movieApiService.getPopularMoviesAsFlow(BuildConfig.API_KEY).collect { movies ->
                 for (movie in movies) {
                     insert(movie)
@@ -78,5 +99,4 @@ class CachingMovieRepository(
             Log.e("CachingMovieRepository", "Error refreshing movies and genres: ${e.message}")
         }
     }
-
 }

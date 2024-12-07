@@ -1,4 +1,4 @@
-package com.example.androidsideproject.data.entities.movies
+package com.example.androidsideproject.data.entities.movie
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
