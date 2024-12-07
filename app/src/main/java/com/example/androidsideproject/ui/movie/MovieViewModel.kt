@@ -8,8 +8,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.androidsideproject.MainApplication
 import com.example.androidsideproject.data.entities.genre.GenreRepository
-import com.example.androidsideproject.data.entities.movies.MovieRepository
-import com.example.androidsideproject.model.MovieWithGenres
+import com.example.androidsideproject.data.entities.language.LanguageRepository
+import com.example.androidsideproject.data.entities.movie.MovieRepository
+import com.example.androidsideproject.model.MovieView
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -18,10 +19,11 @@ import kotlinx.coroutines.launch
 
 class MovieViewModel(
     private val movieRepository: MovieRepository,
-    private val genreRepository: GenreRepository
+    private val genreRepository: GenreRepository,
+    private val languageRepository: LanguageRepository
 ) : ViewModel() {
-    private val _movies = MutableStateFlow<List<MovieWithGenres>>(emptyList())
-    val movies: StateFlow<List<MovieWithGenres>> get() = _movies
+    private val _movies = MutableStateFlow<List<MovieView>>(emptyList())
+    val movies: StateFlow<List<MovieView>> get() = _movies
 
     init {
         fetchMovies()
@@ -30,14 +32,16 @@ class MovieViewModel(
     private fun fetchMovies() {
         viewModelScope.launch {
             val genresFlow = genreRepository.getGenres()
-            val moviesWithGenres = movieRepository.getMovies().map { movieList ->
+            val languageFlow = languageRepository.getLanguages()
+            val movieViews = movieRepository.getMovies().map { movieList ->
                 val genresList = genresFlow.first()
+                val languageList = languageFlow.first()
                 movieList.map { movie ->
-                    MovieWithGenres(
+                    MovieView(
                         id = movie.id,
                         title = movie.title,
                         overview = movie.overview,
-                        originalLanguage = movie.originalLanguage,
+                        language = languageList.find { it.id == movie.originalLanguage }?.name ?: "Unknown",
                         genreNames = movie.genreIds.map { genreId ->
                             genresList.find { it.id == genreId }?.name ?: "Unknown"
                         }
@@ -45,7 +49,7 @@ class MovieViewModel(
                 }
             }.first()
 
-            _movies.value = moviesWithGenres
+            _movies.value = movieViews
         }
     }
 
@@ -55,7 +59,12 @@ class MovieViewModel(
                 val application = this[APPLICATION_KEY] as MainApplication
                 val movieRepository = application.container.movieRepository
                 val genreRepository = application.container.genreRepository
-                MovieViewModel(movieRepository = movieRepository, genreRepository = genreRepository)
+                val languageRepository = application.container.languageRepository
+                MovieViewModel(
+                    movieRepository = movieRepository,
+                    genreRepository = genreRepository,
+                    languageRepository = languageRepository
+                )
             }
         }
     }

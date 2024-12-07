@@ -4,9 +4,12 @@ import android.content.Context
 import com.example.androidsideproject.data.database.MainDatabase
 import com.example.androidsideproject.data.entities.genre.CachingGenreRepository
 import com.example.androidsideproject.data.entities.genre.GenreRepository
-import com.example.androidsideproject.data.entities.movies.CachingMovieRepository
-import com.example.androidsideproject.data.entities.movies.MovieRepository
+import com.example.androidsideproject.data.entities.language.CachingLanguageRepository
+import com.example.androidsideproject.data.entities.language.LanguageRepository
+import com.example.androidsideproject.data.entities.movie.CachingMovieRepository
+import com.example.androidsideproject.data.entities.movie.MovieRepository
 import com.example.androidsideproject.network.genre.GenreApiService
+import com.example.androidsideproject.network.language.LanguageApiService
 import com.example.androidsideproject.network.movie.MovieApiService
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.serialization.json.Json
@@ -16,6 +19,7 @@ import retrofit2.Retrofit
 interface AppContainer {
     val movieRepository: MovieRepository
     val genreRepository: GenreRepository
+    val languageRepository: LanguageRepository
 }
 
 class DefaultAppContainer(private val applicationContext: Context) : AppContainer {
@@ -39,11 +43,12 @@ class DefaultAppContainer(private val applicationContext: Context) : AppContaine
         CachingMovieRepository(
             MainDatabase.getDatabase(context = applicationContext).movieDao(),
             MainDatabase.getDatabase(context = applicationContext).genreDao(),
+            MainDatabase.getDatabase(context = applicationContext).languageDao(),
             retrofitMovieService,
-            retrofitGenreService
+            retrofitGenreService,
+            retrofitLanguageService
         )
     }
-
 
     private val retrofitGenreService: GenreApiService by lazy {
         retrofit.create(GenreApiService::class.java)
@@ -53,6 +58,17 @@ class DefaultAppContainer(private val applicationContext: Context) : AppContaine
         CachingGenreRepository(
             MainDatabase.getDatabase(context = applicationContext).genreDao(),
             retrofitGenreService
+        )
+    }
+
+    private val retrofitLanguageService: LanguageApiService by lazy {
+        retrofit.create(LanguageApiService::class.java)
+    }
+
+    override val languageRepository: LanguageRepository by lazy {
+        CachingLanguageRepository(
+            MainDatabase.getDatabase(context = applicationContext).languageDao(),
+            retrofitLanguageService
         )
     }
 }
