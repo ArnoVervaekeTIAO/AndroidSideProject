@@ -1,9 +1,11 @@
 package com.example.androidsideproject.ui.movie
 
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,8 +16,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.AlertDialog
@@ -37,7 +41,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.androidsideproject.R
@@ -62,9 +69,11 @@ class MovieListActivity : ComponentActivity() {
 @Composable
 fun MovieListScreen(viewModel: MovieViewModel) {
     val movies by viewModel.movies.collectAsState(initial = emptyList())
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     if (movies.isNotEmpty()) {
-        MovieCarouselWithFilter(movies = movies)
+        MovieCarouselWithFilter(movies = movies, isLandscape = isLandscape)
     } else {
         Text(
             text = stringResource(id = R.string.loading_movies),
@@ -76,7 +85,7 @@ fun MovieListScreen(viewModel: MovieViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MovieCarouselWithFilter(movies: List<MovieView>) {
+fun MovieCarouselWithFilter(movies: List<MovieView>, isLandscape: Boolean) {
     var filteredMovies by remember { mutableStateOf(movies) }
     val pagerState = rememberPagerState(pageCount = { filteredMovies.size })
     val coroutineScope = rememberCoroutineScope()
@@ -84,75 +93,168 @@ fun MovieCarouselWithFilter(movies: List<MovieView>) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("") },
-                actions = {
-                    IconButton(onClick = { showFilterDialog = true }) {
+            if (!isLandscape) {
+                // TopAppBar for portrait mode (with Filter icon)
+                TopAppBar(
+                    title = { Text("") },
+                    actions = {
+                        Box(
+                            modifier = Modifier
+                                .padding(end = 16.dp)
+                                .size(60.dp)
+                                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                .padding(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.FilterList,
+                                contentDescription = stringResource(id = R.string.filter_movies),
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .align(Alignment.Center)
+                            )
+                        }
+                    }
+                )
+            }
+        }
+    ) { paddingValues ->
+        val adjustedPadding = if (isLandscape) PaddingValues(0.dp) else paddingValues
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(0.dp)
+        ) {
+            // Filter Icon button for landscape mode - positioned in the top-right corner
+            if (isLandscape) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 4.dp, end = 16.dp)
+                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        .padding(4.dp)
+                ) {
+                    IconButton(
+                        onClick = { showFilterDialog = true },
+                        modifier = Modifier
+                    ) {
                         Icon(Icons.Filled.FilterList, contentDescription = stringResource(id = R.string.filter_movies))
                     }
                 }
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+            }
+
             if (filteredMovies.isNotEmpty()) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(horizontal = 32.dp),
-                ) { pageIndex ->
-                    val movie = filteredMovies[pageIndex]
-                    MovieCard(movie = movie)
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(
-                        onClick = {
-                            coroutineScope.launch {
-                                if (pagerState.currentPage > 0) pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                            }
-                        },
-                        enabled = pagerState.currentPage > 0
+                if (isLandscape) {
+                    // Landscape Layout: Buttons next to MovieCard
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                            .align(Alignment.Center)
                     ) {
-                        Text(text = stringResource(id = R.string.previous))
+                        // Previous Button
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    if (pagerState.currentPage > 0) pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                }
+                            },
+                            enabled = pagerState.currentPage > 0,
+                            modifier = Modifier
+                                .padding(8.dp)
+                        ) {
+                            Text(text = stringResource(id = R.string.previous))
+                        }
+
+                        // Movie Card
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 16.dp)
+                        ) { pageIndex ->
+                            val movie = filteredMovies[pageIndex]
+                            MovieCard(movie = movie, isLandscape = isLandscape)
+                        }
+
+                        // Next Button
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    if (pagerState.currentPage < filteredMovies.size - 1) pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                }
+                            },
+                            enabled = pagerState.currentPage < filteredMovies.size - 1,
+                            modifier = Modifier
+                                .padding(8.dp)
+                        ) {
+                            Text(text = stringResource(id = R.string.next))
+                        }
                     }
-
-                    Text(
-                        text = "${pagerState.currentPage + 1} / ${filteredMovies.size}",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
-                    )
-
-                    Button(
-                        onClick = {
-                            coroutineScope.launch {
-                                if (pagerState.currentPage < filteredMovies.size - 1) pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                            }
-                        },
-                        enabled = pagerState.currentPage < filteredMovies.size - 1
+                } else {
+                    // Portrait Layout: Buttons below MovieCard
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(adjustedPadding),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = stringResource(id = R.string.next))
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.weight(1.3f)
+                        ) { pageIndex ->
+                            val movie = filteredMovies[pageIndex]
+                            MovieCard(movie = movie, isLandscape = isLandscape)
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Button(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        if (pagerState.currentPage > 0) pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                    }
+                                },
+                                enabled = pagerState.currentPage > 0,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+
+                            ) {
+                                Text(text = stringResource(id = R.string.previous), style = TextStyle(fontSize = 20.sp))
+                            }
+
+                            Text(
+                                text = "${pagerState.currentPage + 1} / ${filteredMovies.size}",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
+                            )
+
+                            Button(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        if (pagerState.currentPage < filteredMovies.size - 1) pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                    }
+                                },
+                                enabled = pagerState.currentPage < filteredMovies.size - 1,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            ) {
+                                Text(text = stringResource(id = R.string.next), style = TextStyle(fontSize = 20.sp))
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = stringResource(id = R.string.swipe_hint),
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = stringResource(id = R.string.swipe_hint),
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
             } else {
                 Text(
                     text = stringResource(id = R.string.no_movies_found),
@@ -258,7 +360,10 @@ fun DropdownMenu(
 }
 
 @Composable
-fun MovieCard(movie: MovieView) {
+fun MovieCard(movie: MovieView, isLandscape: Boolean) {
+    val titleFontSize = if (isLandscape) 20.sp else 32.sp
+    val bodyFontSize = if (isLandscape) 14.sp else 16.sp
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -267,29 +372,37 @@ fun MovieCard(movie: MovieView) {
     ) {
         Text(
             text = movie.title,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = titleFontSize),
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Text(
             text = "${stringResource(id = R.string.language)} ${movie.language}",
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = bodyFontSize),
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Text(
             text = "${stringResource(id = R.string.genres)} ${movie.genreNames.joinToString(", ")}",
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = bodyFontSize),
             modifier = Modifier.padding(bottom = 16.dp)
         )
         Text(
-            text = movie.overview,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
+            text = if (movie.overview.length > 400) {
+                movie.overview.substring(0, 400) + "..."
+            } else {
+                movie.overview
+            },
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = bodyFontSize),
+            modifier = Modifier.padding(bottom = 16.dp),
+            maxLines = 6,
+            overflow = TextOverflow.Ellipsis
         )
         Button(onClick = { /* Add to watchlist logic */ }) {
-            Text(text = stringResource(id = R.string.add_to_watchlist))
+            val buttonFontSize = if (isLandscape) 16.sp else 20.sp
+            Text(text = stringResource(id = R.string.add_to_watchlist), style = TextStyle(fontSize = buttonFontSize))
         }
     }
 }
+
 
 /*
 @Preview(showBackground = true)

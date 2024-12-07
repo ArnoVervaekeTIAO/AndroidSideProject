@@ -13,6 +13,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.androidsideproject.ui.components.AppBottomBar
 import com.example.androidsideproject.ui.components.AppNavigation
+import com.example.androidsideproject.ui.components.AppNavigationBar
 import com.example.androidsideproject.ui.components.AppTopBar
 import com.example.androidsideproject.ui.movie.MovieViewModel
 
@@ -35,7 +36,7 @@ fun MainApp(
 
     Scaffold(
         topBar = { AppTopBar(pageTitle = pageTitle) },
-        bottomBar = { AppBottomBar(navController) },
+        bottomBar = { AppNavigationBar(navController, movieViewModel) },
     ) { paddingValues ->
         AppNavigation(
             navController = navController,
