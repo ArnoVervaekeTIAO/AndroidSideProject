@@ -25,7 +25,6 @@ fun AppNavigation(
                 selectedMovies = uiState.value.filteredMovies,
                 isLoading = uiState.value.isLoading,
                 errorMessage = uiState.value.errorMessage,
-                // Pass the filter values and handlers to MovieListScreen
                 onApplyFilter = { language, genre ->
                     browseViewModel.applyFilter(language, genre)
                 },
