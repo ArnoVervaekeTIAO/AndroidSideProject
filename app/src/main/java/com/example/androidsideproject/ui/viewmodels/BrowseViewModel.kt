@@ -86,7 +86,6 @@ class BrowseViewModel(
         filterManager.applyFilter(language, genre)
     }
 
-    // This method can be used to navigate between pages
     fun updateSelectedPage(newPage: Int) {
         filterManager.updateSelectedPage(newPage)
     }

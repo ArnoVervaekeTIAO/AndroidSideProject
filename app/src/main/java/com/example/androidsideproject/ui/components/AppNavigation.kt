@@ -42,13 +42,11 @@ fun AppNavigation(
                 selectedMovies = uiState.value.filteredMovies,
                 isLoading = uiState.value.isLoading,
                 errorMessage = uiState.value.errorMessage,
-                // Pass the filter values and handlers to MovieListScreen
                 onApplyFilter = { language, genre ->
                     watchlistViewModel.applyFilter(language, genre)
                 },
                 onPageChange = { newPage ->
-                    // Update the selected page in the ViewModel
-                    browseViewModel.updateSelectedPage(newPage)
+                    watchlistViewModel.updateSelectedPage(newPage)
                 },
                 selectedPage = uiState.value.selectedPage
             )

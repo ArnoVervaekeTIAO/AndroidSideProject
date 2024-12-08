@@ -25,10 +25,8 @@ class WatchlistViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(UiState())
 
-    // Combine the loading/error state with the filter state
     val uiState: StateFlow<UiState> = _uiState
         .combine(filterManager.uiState) { loadingState, filterState ->
-            // Merge the loading/error state with the filtered data state
             filterState.copy(
                 isLoading = loadingState.isLoading,
                 errorMessage = loadingState.errorMessage
@@ -45,36 +43,29 @@ class WatchlistViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true)
 
             try {
-                // Fetch the movies from the watchlist repository
                 val movieViews = watchlistRepository.getWatchlist()
 
-                // Initialize filter manager with the fetched movies
                 filterManager.initialize(movieViews)
 
-                // Update the UI state to show movies and hide the loading state
                 _uiState.value = _uiState.value.copy(
                     movies = movieViews,
                     isLoading = false
                 )
             } catch (e: Exception) {
-                // Handle error and update UI state
                 _uiState.value = _uiState.value.copy(
                     errorMessage = e.localizedMessage,
                     isLoading = false
                 )
 
-                // Reset filters in case of error
                 filterManager.applyFilter(null, null)
             }
         }
     }
 
-    // Function to apply filters based on selected language and genre
     fun applyFilter(language: String?, genre: String?) {
         filterManager.applyFilter(language, genre)
     }
 
-    // Function to update the selected page for pagination or viewing different pages
     fun updateSelectedPage(newPage: Int) {
         filterManager.updateSelectedPage(newPage)
     }
