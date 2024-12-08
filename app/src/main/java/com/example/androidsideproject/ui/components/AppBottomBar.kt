@@ -24,15 +24,22 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
-import com.example.androidsideproject.ui.movie.MovieViewModel
+import com.example.androidsideproject.ui.viewmodels.BrowseViewModel
+import com.example.androidsideproject.ui.viewmodels.WatchlistViewModel
 
 @Composable
-fun AppNavigationBar(navController: NavHostController, movieViewModel: MovieViewModel) {
+fun AppNavigationBar(navController: NavHostController,
+                     browseViewModel: BrowseViewModel,
+                     watchlistViewModel: WatchlistViewModel
+) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     if (isLandscape) {
-        LandscapeSidebar(navController = navController, movieViewModel = movieViewModel)
+        LandscapeSidebar(navController = navController,
+            browseViewModel = browseViewModel,
+            watchlistViewModel = watchlistViewModel
+            )
     } else {
         AppBottomBar(navController = navController)
     }
@@ -40,7 +47,10 @@ fun AppNavigationBar(navController: NavHostController, movieViewModel: MovieView
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LandscapeSidebar(navController: NavHostController, movieViewModel: MovieViewModel) {
+fun LandscapeSidebar(navController: NavHostController,
+                     browseViewModel: BrowseViewModel,
+                     watchlistViewModel: WatchlistViewModel
+) {
     var isMenuOpen by remember { mutableStateOf(false) }
 
     Box {
@@ -72,7 +82,8 @@ fun LandscapeSidebar(navController: NavHostController, movieViewModel: MovieView
                     AppNavigation(
                         navController = navController,
                         modifier = Modifier.padding(start = if (isMenuOpen) 200.dp else 0.dp),
-                        movieViewModel = movieViewModel
+                        browseViewModel = browseViewModel,
+                        watchlistViewModel = watchlistViewModel
                     )
                 }
 

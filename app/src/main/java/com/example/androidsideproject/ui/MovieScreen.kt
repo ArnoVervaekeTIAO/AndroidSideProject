@@ -1,10 +1,9 @@
-package com.example.androidsideproject.ui.movie
+package com.example.androidsideproject.ui
 
 import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,7 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,47 +48,70 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.androidsideproject.R
 import com.example.androidsideproject.model.MovieView
+import com.example.androidsideproject.ui.states.EmptyView
+import com.example.androidsideproject.ui.states.ErrorView
+import com.example.androidsideproject.ui.states.LoadingView
 import com.example.androidsideproject.ui.theme.MainTheme
 import kotlinx.coroutines.launch
 
 class MovieListActivity : ComponentActivity() {
 
-    private val movieViewModel: MovieViewModel by viewModels { MovieViewModel.Factory }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val emptyList: List<MovieView> = emptyList()
         setContent {
             MainTheme {
-                MovieListScreen(viewModel = movieViewModel)
+                MovieListScreen(emptyList, emptyList, false, "Preview", { _, _ -> }, {}, 0)
             }
         }
     }
 }
 
 @Composable
-fun MovieListScreen(viewModel: MovieViewModel) {
-    val movies by viewModel.movies.collectAsState(initial = emptyList())
+fun MovieListScreen(allMovies: List<MovieView>,
+                    selectedMovies: List<MovieView>,
+                    isLoading: Boolean,
+                    errorMessage: String? = null,
+                    onApplyFilter: (String?, String?) -> Unit,
+                    onPageChange: (Int) -> Unit,
+                    selectedPage: Int
+){
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    if (movies.isNotEmpty()) {
-        MovieCarouselWithFilter(movies = movies, isLandscape = isLandscape)
-    } else {
-        Text(
-            text = stringResource(id = R.string.loading_movies),
-            modifier = Modifier.fillMaxSize(),
-            style = MaterialTheme.typography.bodyMedium,
+    when {
+        isLoading -> LoadingView()
+        errorMessage != null -> ErrorView(errorMessage = errorMessage)
+        selectedMovies.isEmpty() -> EmptyView()
+        else -> MovieCarouselWithFilter(
+            allMovies = allMovies,
+            selectedMovies = selectedMovies,
+            isLandscape = isLandscape,
+            onApplyFilter = onApplyFilter,
+            onPageChange = onPageChange,
+            selectedPage = selectedPage
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MovieCarouselWithFilter(movies: List<MovieView>, isLandscape: Boolean) {
-    var filteredMovies by remember { mutableStateOf(movies) }
-    val pagerState = rememberPagerState(pageCount = { filteredMovies.size })
+fun MovieCarouselWithFilter(
+        allMovies: List<MovieView>,
+        selectedMovies: List<MovieView>,
+        isLandscape: Boolean,
+        onApplyFilter: (String?, String?) -> Unit,
+        onPageChange: (Int) -> Unit,
+        selectedPage: Int
+) {
+    var filteredMovies by remember { mutableStateOf(selectedMovies) }
+    val pagerState = rememberPagerState(pageCount = { filteredMovies.size }, initialPage = selectedPage)
     val coroutineScope = rememberCoroutineScope()
     var showFilterDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(pagerState.currentPage) {
+        onPageChange(pagerState.currentPage)
+    }
 
     Scaffold(
         topBar = {
@@ -149,7 +171,8 @@ fun MovieCarouselWithFilter(movies: List<MovieView>, isLandscape: Boolean) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
                             .align(Alignment.Center)
                     ) {
                         // Previous Button
@@ -171,7 +194,7 @@ fun MovieCarouselWithFilter(movies: List<MovieView>, isLandscape: Boolean) {
                             state = pagerState,
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(horizontal = 16.dp)
+                                .padding(horizontal = 16.dp),
                         ) { pageIndex ->
                             val movie = filteredMovies[pageIndex]
                             MovieCard(movie = movie, isLandscape = isLandscape)
@@ -267,15 +290,23 @@ fun MovieCarouselWithFilter(movies: List<MovieView>, isLandscape: Boolean) {
 
     if (showFilterDialog) {
         FilterDialog(
-            movies = movies,
+            movies = selectedMovies,
             onApplyFilter = { selectedLanguage, selectedGenre ->
-                filteredMovies = movies.filter { movie ->
-                    (selectedLanguage == null || movie.language == selectedLanguage) &&
-                            (selectedGenre == null || selectedGenre in movie.genreNames)
+                filteredMovies = if (selectedLanguage == null && selectedGenre == null) {
+                    allMovies.toList()
+                } else {
+                    selectedMovies.filter { movie ->
+                        (selectedLanguage == null || movie.language == selectedLanguage) &&
+                                (selectedGenre == null || selectedGenre in movie.genreNames)
+                    }
                 }
+
+                onApplyFilter(selectedLanguage, selectedGenre)
                 showFilterDialog = false
             },
-            onDismiss = { showFilterDialog = false }
+            onDismiss = {
+                showFilterDialog = false
+            }
         )
     }
 }
