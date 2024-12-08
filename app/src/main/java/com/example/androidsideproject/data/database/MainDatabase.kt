@@ -13,16 +13,25 @@ import com.example.androidsideproject.data.entities.movie.MovieDao
 import com.example.androidsideproject.data.entities.movie.MovieDbItem
 import com.example.androidsideproject.data.entities.movie.MovieGenreCrossRef
 import com.example.androidsideproject.data.entities.movie.MovieLanguageCrossRef
+import com.example.androidsideproject.data.entities.watchlist.WatchlistDao
+import com.example.androidsideproject.data.entities.watchlist.WatchlistDbItem
 
 @Database(
-    entities = [MovieDbItem::class, GenreDbItem::class, MovieGenreCrossRef::class, LanguageDbItem::class, MovieLanguageCrossRef::class],
-    version = 3,
+    entities = [
+        MovieDbItem::class,
+        GenreDbItem::class,
+        MovieGenreCrossRef::class,
+        LanguageDbItem::class,
+        MovieLanguageCrossRef::class,
+        WatchlistDbItem::class],
+    version = 4,
     exportSchema = false
 )
 abstract class MainDatabase : RoomDatabase() {
     abstract fun movieDao(): MovieDao
     abstract fun genreDao(): GenreDao
     abstract fun languageDao(): LanguageDao
+    abstract fun watchlistDao(): WatchlistDao
 
     companion object {
         @Volatile

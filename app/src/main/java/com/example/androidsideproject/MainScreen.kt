@@ -11,16 +11,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.androidsideproject.ui.components.AppBottomBar
 import com.example.androidsideproject.ui.components.AppNavigation
 import com.example.androidsideproject.ui.components.AppNavigationBar
 import com.example.androidsideproject.ui.components.AppTopBar
-import com.example.androidsideproject.ui.movie.MovieViewModel
+import com.example.androidsideproject.ui.viewmodels.BrowseViewModel
+import com.example.androidsideproject.ui.viewmodels.WatchlistViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainApp(
-    movieViewModel: MovieViewModel = viewModel(factory = MovieViewModel.Factory),
+    browseViewModel: BrowseViewModel = viewModel(factory = BrowseViewModel.Factory),
+    watchlistViewModel: WatchlistViewModel = viewModel(factory = WatchlistViewModel.Factory)
 ) {
     val navController = rememberNavController()
 
@@ -36,12 +37,13 @@ fun MainApp(
 
     Scaffold(
         topBar = { AppTopBar(pageTitle = pageTitle) },
-        bottomBar = { AppNavigationBar(navController, movieViewModel) },
+        bottomBar = { AppNavigationBar(navController, browseViewModel, watchlistViewModel) },
     ) { paddingValues ->
         AppNavigation(
             navController = navController,
             modifier = Modifier.padding(paddingValues),
-            movieViewModel = movieViewModel
+            browseViewModel = browseViewModel,
+            watchlistViewModel = watchlistViewModel,
         )
     }
 }
