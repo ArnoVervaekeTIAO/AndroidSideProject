@@ -11,11 +11,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.androidsideproject.ui.components.AppNavigation
-import com.example.androidsideproject.ui.components.AppNavigationBar
-import com.example.androidsideproject.ui.components.AppTopBar
-import com.example.androidsideproject.ui.viewmodels.BrowseViewModel
-import com.example.androidsideproject.ui.viewmodels.WatchlistViewModel
+import com.example.androidsideproject.ui.navigation.AppNavigation
+import com.example.androidsideproject.ui.navigation.AppNavigationBar
+import com.example.androidsideproject.ui.navigation.AppTopBar
+import com.example.androidsideproject.ui.viewmodel.BrowseViewModel
+import com.example.androidsideproject.ui.viewmodel.WatchlistViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -31,7 +31,6 @@ fun MainApp(
     val pageTitles = mapOf(
         "browse" to stringResource(id = R.string.browse_page_title),
         "watchlist" to stringResource(id = R.string.watchlist_page_title),
-        "mymovies" to stringResource(id = R.string.mymovies_page_title)
     )
     val pageTitle = pageTitles[currentRoute] ?: stringResource(id = R.string.movieapp_page_title)
 

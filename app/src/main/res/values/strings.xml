@@ -3,7 +3,6 @@
     <string name="loading_movies">Loading movies…</string>
     <string name="browse_page_title">Browse Movies</string>
     <string name="watchlist_page_title">My Watchlist</string>
-    <string name="mymovies_page_title">My Movies</string>
     <string name="movieapp_page_title">Movie App</string>
     <string name="filter_movies">Filter Movies</string>
     <string name="select_language">Select Language:</string>
@@ -24,4 +23,14 @@
     <string name="no_movies_suggestion">Try refreshing or adding movies to your list.</string>
     <string name="retry">Retry</string>
     <string name="error_loading_movies">Failed to load movies. Please check your connection.</string>
+    <string name="browse">Browse</string>
+    <string name="watchlist">Watchlist</string>
+    <string name="confirm">Confirm</string>
+    <string name="add_movie_to_watchlist">Add movie to watchlist?</string>
+    <string name="ok">OK</string>
+    <string name="star_rating">Star %1$d</string>
+    <string name="delete_movie">Delete</string>
+    <string name="confirm_delete_title">Remove</string>
+    <string name="confirm_delete_message">Remove movie from your watchlist?</string>
+    <string name="delete">Remove</string>
 </resources>

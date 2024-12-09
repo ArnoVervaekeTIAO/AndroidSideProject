@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WatchlistDao {
@@ -11,5 +12,11 @@ interface WatchlistDao {
     suspend fun insertWatchlist(movie: WatchlistDbItem)
 
     @Query("SELECT * FROM watchlist")
-    suspend fun getAllWatchlists(): List<WatchlistDbItem>
+    fun getAllWatchlists(): Flow<List<WatchlistDbItem>>
+
+    @Query("UPDATE watchlist SET rating = :rating WHERE id = :movieId")
+    suspend fun updateRating(movieId: Long, rating: Int)
+
+    @Query("DELETE FROM watchlist WHERE id = :movieId")
+    suspend fun deleteMovie(movieId: Long)
 }

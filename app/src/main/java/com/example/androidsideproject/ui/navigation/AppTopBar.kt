@@ -1,4 +1,4 @@
-package com.example.androidsideproject.ui.components
+package com.example.androidsideproject.ui.navigation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Row

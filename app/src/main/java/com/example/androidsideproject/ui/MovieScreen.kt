@@ -20,6 +20,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -29,7 +31,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,14 +44,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.androidsideproject.R
 import com.example.androidsideproject.model.MovieView
-import com.example.androidsideproject.ui.states.EmptyView
-import com.example.androidsideproject.ui.states.ErrorView
-import com.example.androidsideproject.ui.states.LoadingView
+import com.example.androidsideproject.ui.screen.FilterDialog
+import com.example.androidsideproject.ui.screen.MovieCard
+import com.example.androidsideproject.ui.state.EmptyView
+import com.example.androidsideproject.ui.state.ErrorView
+import com.example.androidsideproject.ui.state.LoadingView
 import com.example.androidsideproject.ui.theme.MainTheme
 import kotlinx.coroutines.launch
 
@@ -61,7 +63,7 @@ class MovieListActivity : ComponentActivity() {
         val emptyList: List<MovieView> = emptyList()
         setContent {
             MainTheme {
-                MovieListScreen(emptyList, emptyList, false, "Preview", { _, _ -> }, {}, 0)
+                MovieListScreen(emptyList, emptyList, false, "Preview", { _, _ -> }, {}, 0, {})
             }
         }
     }
@@ -74,7 +76,11 @@ fun MovieListScreen(allMovies: List<MovieView>,
                     errorMessage: String? = null,
                     onApplyFilter: (String?, String?) -> Unit,
                     onPageChange: (Int) -> Unit,
-                    selectedPage: Int
+                    selectedPage: Int,
+                    addToWatchlist: (MovieView) -> Unit = {},
+                    watchlistView: Boolean = false,
+                    onRatingChanged: (MovieView, Int) -> Unit = { _, _ -> },
+                    onDelete: (MovieView) -> Unit = {}
 ){
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -89,7 +95,11 @@ fun MovieListScreen(allMovies: List<MovieView>,
             isLandscape = isLandscape,
             onApplyFilter = onApplyFilter,
             onPageChange = onPageChange,
-            selectedPage = selectedPage
+            selectedPage = selectedPage,
+            addToWatchlist = addToWatchlist,
+            watchlistView = watchlistView,
+            onRatingChanged = onRatingChanged,
+            onDelete = onDelete
         )
     }
 }
@@ -102,12 +112,31 @@ fun MovieCarouselWithFilter(
         isLandscape: Boolean,
         onApplyFilter: (String?, String?) -> Unit,
         onPageChange: (Int) -> Unit,
-        selectedPage: Int
+        selectedPage: Int,
+        addToWatchlist: (MovieView) -> Unit = {},
+        watchlistView: Boolean = false,
+        onRatingChanged: (MovieView, Int) -> Unit = { _, _ -> },
+        onDelete: (MovieView) -> Unit = {}
 ) {
     var filteredMovies by remember { mutableStateOf(selectedMovies) }
     val pagerState = rememberPagerState(pageCount = { filteredMovies.size }, initialPage = selectedPage)
     val coroutineScope = rememberCoroutineScope()
     var showFilterDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var movieToDelete by remember { mutableStateOf<MovieView?>(null) }
+
+
+    val updatedOnRatingChanged: (MovieView, Int) -> Unit = { movie, newRating ->
+        val updatedMovies = filteredMovies.map { currentMovie ->
+            if (currentMovie.id == movie.id) {
+                currentMovie.copy(rating = newRating)
+            } else {
+                currentMovie
+            }
+        }
+        filteredMovies = updatedMovies
+        onRatingChanged(movie, newRating)
+    }
 
     LaunchedEffect(pagerState.currentPage) {
         onPageChange(pagerState.currentPage)
@@ -116,9 +145,29 @@ fun MovieCarouselWithFilter(
     Scaffold(
         topBar = {
             if (!isLandscape) {
-                // TopAppBar for portrait mode (with Filter icon)
+                // TopAppBar for portrait mode (with Filter/Delete icon)
                 TopAppBar(
                     title = { Text("") },
+                    navigationIcon = {
+                        if (watchlistView)
+                        {
+                        IconButton(
+                            onClick = {
+                                if (filteredMovies.isNotEmpty()) {
+                                    movieToDelete = filteredMovies[pagerState.currentPage]
+                                    showDeleteDialog = true
+                                }
+                            },
+                            modifier = Modifier.padding(start = 16.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(id = R.string.delete_movie),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                            }
+                    },
                     actions = {
                         IconButton(
                             onClick = { showFilterDialog = true },
@@ -130,9 +179,7 @@ fun MovieCarouselWithFilter(
                             Icon(
                                 Icons.Filled.FilterList,
                                 contentDescription = stringResource(id = R.string.filter_movies),
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .align(Alignment.CenterVertically)
+                                modifier = Modifier.size(36.dp)
                             )
                         }
                     }
@@ -150,17 +197,50 @@ fun MovieCarouselWithFilter(
             // Filter Icon button for landscape mode - positioned in the top-right corner
             if (isLandscape) {
                 Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 4.dp, end = 16.dp)
-                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                        .padding(4.dp)
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    IconButton(
-                        onClick = { showFilterDialog = true },
+                    // Filter icon (always displayed)
+                    Box(
                         modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 4.dp, end = 16.dp)
                     ) {
-                        Icon(Icons.Filled.FilterList, contentDescription = stringResource(id = R.string.filter_movies))
+                        IconButton(
+                            onClick = { showFilterDialog = true },
+                            modifier = Modifier
+                                .size(60.dp)
+                                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        ) {
+                            Icon(
+                                Icons.Filled.FilterList,
+                                contentDescription = stringResource(id = R.string.filter_movies),
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                    }
+
+                    // Delete icon (conditionally displayed)
+                    if (watchlistView) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(top = 16.dp, start = 16.dp)
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    if (filteredMovies.isNotEmpty()) {
+                                        movieToDelete = filteredMovies[pagerState.currentPage]
+                                        showDeleteDialog = true
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = stringResource(id = R.string.delete_movie),
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -197,7 +277,13 @@ fun MovieCarouselWithFilter(
                                 .padding(horizontal = 16.dp),
                         ) { pageIndex ->
                             val movie = filteredMovies[pageIndex]
-                            MovieCard(movie = movie, isLandscape = isLandscape)
+                            MovieCard(movie = movie,
+                                isLandscape = true,
+                                addToWatchlist = addToWatchlist,
+                                watchlistView = watchlistView,
+                                onRatingChanged = { newRating ->
+                                    updatedOnRatingChanged(movie, newRating)
+                                })
                         }
 
                         // Next Button
@@ -228,7 +314,14 @@ fun MovieCarouselWithFilter(
                             modifier = Modifier.weight(1.3f)
                         ) { pageIndex ->
                             val movie = filteredMovies[pageIndex]
-                            MovieCard(movie = movie, isLandscape = isLandscape)
+                            MovieCard(movie = movie,
+                                isLandscape = false,
+                                addToWatchlist = addToWatchlist,
+                                watchlistView = watchlistView,
+                                onRatingChanged = { newRating ->
+                                    updatedOnRatingChanged(movie, newRating)
+                                }
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -288,6 +381,35 @@ fun MovieCarouselWithFilter(
         }
     }
 
+    if (showDeleteDialog && movieToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = {
+                Text(text = stringResource(id = R.string.confirm_delete_title))
+            },
+            text = {
+                Text(text = stringResource(id = R.string.confirm_delete_message))
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        movieToDelete?.let { onDelete(it) }
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text(text = stringResource(id = R.string.delete))
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showDeleteDialog = false }
+                ) {
+                    Text(text = stringResource(id = R.string.cancel))
+                }
+            }
+        )
+    }
+
     if (showFilterDialog) {
         FilterDialog(
             movies = selectedMovies,
@@ -310,130 +432,6 @@ fun MovieCarouselWithFilter(
         )
     }
 }
-
-@Composable
-fun FilterDialog(
-    movies: List<MovieView>,
-    onApplyFilter: (String?, String?) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val languages = remember { movies.map { it.language }.distinct() }
-    val genres = remember { movies.flatMap { it.genreNames }.distinct() }
-
-    var selectedLanguage by remember { mutableStateOf<String?>(null) }
-    var selectedGenre by remember { mutableStateOf<String?>(null) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            Button(
-                onClick = { onApplyFilter(selectedLanguage, selectedGenre) }
-            ) {
-                Text(stringResource(id = R.string.apply))
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {
-                Text(stringResource(id = R.string.cancel))
-            }
-        },
-        text = {
-            Column {
-                Text(stringResource(id = R.string.filter_movies), style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(stringResource(id = R.string.select_language))
-                DropdownMenu(selectedValue = selectedLanguage, options = languages, onSelect = { selectedLanguage = it })
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(stringResource(id = R.string.select_genre))
-                DropdownMenu(selectedValue = selectedGenre, options = genres, onSelect = { selectedGenre = it })
-            }
-        }
-    )
-}
-
-@Composable
-fun DropdownMenu(
-    selectedValue: String?,
-    options: List<String>,
-    onSelect: (String?) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box {
-        TextButton(onClick = { expanded = true }) {
-            Text(text = selectedValue ?: stringResource(id = R.string.all_options))
-        }
-        androidx.compose.material3.DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            androidx.compose.material3.DropdownMenuItem(
-                onClick = {
-                    onSelect(null)
-                    expanded = false
-                },
-                text = { Text(stringResource(id = R.string.all_options)) }
-            )
-            options.forEach { option ->
-                androidx.compose.material3.DropdownMenuItem(
-                    onClick = {
-                        onSelect(option)
-                        expanded = false
-                    },
-                    text = { Text(option) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun MovieCard(movie: MovieView, isLandscape: Boolean) {
-    val titleFontSize = if (isLandscape) 20.sp else 32.sp
-    val bodyFontSize = if (isLandscape) 14.sp else 16.sp
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = movie.title,
-            style = MaterialTheme.typography.titleLarge.copy(fontSize = titleFontSize),
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        Text(
-            text = "${stringResource(id = R.string.language)} ${movie.language}",
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = bodyFontSize),
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        Text(
-            text = "${stringResource(id = R.string.genres)} ${movie.genreNames.joinToString(", ")}",
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = bodyFontSize),
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-        Text(
-            text = if (movie.overview.length > 400) {
-                movie.overview.substring(0, 400) + "..."
-            } else {
-                movie.overview
-            },
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = bodyFontSize),
-            modifier = Modifier.padding(bottom = 16.dp),
-            maxLines = 6,
-            overflow = TextOverflow.Ellipsis
-        )
-        Button(onClick = { /* Add to watchlist logic */ }) {
-            val buttonFontSize = if (isLandscape) 16.sp else 20.sp
-            Text(text = stringResource(id = R.string.add_to_watchlist), style = TextStyle(fontSize = buttonFontSize))
-        }
-    }
-}
-
 
 /*
 @Preview(showBackground = true)

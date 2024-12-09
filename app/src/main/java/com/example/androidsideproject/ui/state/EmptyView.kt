@@ -1,4 +1,4 @@
-package com.example.androidsideproject.ui.states
+package com.example.androidsideproject.ui.state
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

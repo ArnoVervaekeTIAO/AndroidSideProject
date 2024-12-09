@@ -1,4 +1,4 @@
-package com.example.androidsideproject.ui.viewmodels
+package com.example.androidsideproject.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -10,16 +10,17 @@ import com.example.androidsideproject.MainApplication
 import com.example.androidsideproject.data.entities.genre.GenreRepository
 import com.example.androidsideproject.data.entities.language.LanguageRepository
 import com.example.androidsideproject.data.entities.movie.MovieRepository
+import com.example.androidsideproject.data.entities.watchlist.WatchlistRepository
 import com.example.androidsideproject.model.MovieView
 import com.example.androidsideproject.model.UiState
 import com.example.androidsideproject.ui.MovieFilterManager
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -27,8 +28,12 @@ class BrowseViewModel(
     private val movieRepository: MovieRepository,
     private val genreRepository: GenreRepository,
     private val languageRepository: LanguageRepository,
-    private val filterManager: MovieFilterManager
+    private val filterManager: MovieFilterManager,
+    private val watchlistRepository: WatchlistRepository
 ) : ViewModel() {
+
+    private val _navigationEvent = MutableSharedFlow<String>()
+    val navigationEvent = _navigationEvent.asSharedFlow()
 
     private val _uiState = MutableStateFlow(UiState())
 
@@ -42,36 +47,43 @@ class BrowseViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
 
     init {
-        fetchMovies()
+        observeMoviesAndWatchlist()
     }
 
-    private fun fetchMovies() {
+    private fun observeMoviesAndWatchlist() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-
             try {
                 val genresFlow = genreRepository.getGenres()
                 val languageFlow = languageRepository.getLanguages()
-                val movieViews = movieRepository.getMovies().map { movieList ->
+                val moviesFlow = movieRepository.getMovies()
+                val watchlistFlow = watchlistRepository.getWatchlist()
+
+                combine(moviesFlow, watchlistFlow) { movies, watchlistMovies ->
                     val genresList = genresFlow.first()
                     val languageList = languageFlow.first()
-                    movieList.map { movie ->
+
+                    val mappedMovies = movies.map { movie ->
                         MovieView(
                             id = movie.id,
                             title = movie.title,
                             overview = movie.overview,
-                            language = languageList.find { it.id == movie.originalLanguage }?.name
-                                ?: "Unknown",
+                            language = languageList.find { it.id == movie.originalLanguage }?.name ?: "Unknown",
                             genreNames = movie.genreIds.map { genreId ->
                                 genresList.find { it.id == genreId }?.name ?: "Unknown"
                             }
                         )
                     }
-                }.first()
 
-                filterManager.initialize(movieViews)
+                    val filteredMovies = mappedMovies.filter { movieView ->
+                        watchlistMovies.none { it.id == movieView.id }
+                    }
 
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                    filterManager.initialize(filteredMovies)
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        movies = filteredMovies
+                    )
+                }.collect { }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -90,6 +102,25 @@ class BrowseViewModel(
         filterManager.updateSelectedPage(newPage)
     }
 
+    fun addMovieToWatchlist(movieView: MovieView) {
+        viewModelScope.launch {
+            try {
+                watchlistRepository.addToWatchlist(movieView)
+                _navigationEvent.emit("watchlist")
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Failed to add to watchlist: ${e.localizedMessage}"
+                )
+            }
+        }
+    }
+
+    fun resetNavigationEvent() {
+        viewModelScope.launch {
+            _navigationEvent.emit("")
+        }
+    }
+
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
@@ -97,15 +128,16 @@ class BrowseViewModel(
                 val movieRepository = application.container.movieRepository
                 val genreRepository = application.container.genreRepository
                 val languageRepository = application.container.languageRepository
+                val watchlistRepository = application.container.watchlistRepository
                 val filterManager = MovieFilterManager()
                 BrowseViewModel(
                     movieRepository = movieRepository,
                     genreRepository = genreRepository,
                     languageRepository = languageRepository,
-                    filterManager = filterManager
+                    watchlistRepository = watchlistRepository,
+                    filterManager = filterManager,
                 )
             }
         }
     }
 }
-
