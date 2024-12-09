@@ -1,6 +1,8 @@
 package com.example.androidsideproject.data.entities.watchlist
 
 import com.example.androidsideproject.model.MovieView
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class WatchlistRepository(private val watchlistDao: WatchlistDao) {
 
@@ -9,8 +11,17 @@ class WatchlistRepository(private val watchlistDao: WatchlistDao) {
         watchlistDao.insertWatchlist(watchlistItem)
     }
 
-    suspend fun getWatchlist(): List<MovieView> {
-        val watchlistDbItems = watchlistDao.getAllWatchlists()
-        return watchlistDbItems.map { it.toMovieView() }
+    fun getWatchlist(): Flow<List<MovieView>> {
+        return watchlistDao.getAllWatchlists().map { list ->
+            list.map { it.toMovieView() }
+        }
+    }
+
+    suspend fun updateRating(movieId: Long, rating: Int) {
+        watchlistDao.updateRating(movieId, rating)
+    }
+
+    suspend fun deleteMovie(movieId: Long) {
+        watchlistDao.deleteMovie(movieId)
     }
 }

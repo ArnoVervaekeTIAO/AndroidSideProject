@@ -24,7 +24,7 @@ import com.example.androidsideproject.data.entities.watchlist.WatchlistDbItem
         LanguageDbItem::class,
         MovieLanguageCrossRef::class,
         WatchlistDbItem::class],
-    version = 4,
+    version = 8,
     exportSchema = false
 )
 abstract class MainDatabase : RoomDatabase() {

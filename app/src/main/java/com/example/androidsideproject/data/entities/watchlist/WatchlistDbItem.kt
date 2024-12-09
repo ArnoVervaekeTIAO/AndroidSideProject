@@ -11,7 +11,8 @@ data class WatchlistDbItem(
     var title: String,
     var overview: String,
     var genreNames: String,
-    var language: String
+    var language: String,
+    var rating: Int?
 )
 
 fun MovieView.toWatchlistDbItem(): WatchlistDbItem = WatchlistDbItem(
@@ -19,7 +20,8 @@ fun MovieView.toWatchlistDbItem(): WatchlistDbItem = WatchlistDbItem(
     title = title,
     overview = overview,
     genreNames = genreNames.joinToString(", "),
-    language = language
+    language = language,
+    rating = rating
 )
 
 fun WatchlistDbItem.toMovieView(): MovieView = MovieView(
@@ -27,5 +29,6 @@ fun WatchlistDbItem.toMovieView(): MovieView = MovieView(
     title = title,
     overview = overview,
     language = language,
-    genreNames = genreNames.split(", ").filter { it.isNotEmpty() }
+    genreNames = genreNames.split(", ").filter { it.isNotEmpty() },
+    rating = rating
 )

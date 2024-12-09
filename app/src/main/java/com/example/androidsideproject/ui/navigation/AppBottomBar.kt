@@ -1,4 +1,4 @@
-package com.example.androidsideproject.ui.components
+package com.example.androidsideproject.ui.navigation
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
@@ -21,11 +21,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
-import com.example.androidsideproject.ui.viewmodels.BrowseViewModel
-import com.example.androidsideproject.ui.viewmodels.WatchlistViewModel
+import com.example.androidsideproject.R
+import com.example.androidsideproject.ui.viewmodel.BrowseViewModel
+import com.example.androidsideproject.ui.viewmodel.WatchlistViewModel
 
 @Composable
 fun AppNavigationBar(navController: NavHostController,
@@ -47,11 +49,20 @@ fun AppNavigationBar(navController: NavHostController,
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LandscapeSidebar(navController: NavHostController,
-                     browseViewModel: BrowseViewModel,
-                     watchlistViewModel: WatchlistViewModel
+fun LandscapeSidebar(
+    navController: NavHostController,
+    browseViewModel: BrowseViewModel,
+    watchlistViewModel: WatchlistViewModel
 ) {
     var isMenuOpen by remember { mutableStateOf(false) }
+    var currentRoute by remember { mutableStateOf<String?>(null) }
+
+    // Observe navigation changes and update currentRoute
+    LaunchedEffect(navController) {
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            currentRoute = destination.route
+        }
+    }
 
     Box {
         Scaffold(
@@ -98,15 +109,16 @@ fun LandscapeSidebar(navController: NavHostController,
                         Column {
                             IconButton(
                                 onClick = { isMenuOpen = false },
-                                modifier = Modifier.padding(start= 12.dp, top = 20.dp)
+                                modifier = Modifier.padding(start = 12.dp, top = 20.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Menu,
                                     contentDescription = "Close Menu",
                                     tint = MaterialTheme.colorScheme.onPrimary
-                                )                            }
+                                )
+                            }
                             Spacer(modifier = Modifier.height(16.dp))
-                            DrawerContent(navController)
+                            DrawerContent(navController, currentRoute)
                         }
                     }
                 }
@@ -115,30 +127,39 @@ fun LandscapeSidebar(navController: NavHostController,
     }
 }
 
-
 @Composable
-fun DrawerContent(navController: NavHostController) {
+fun DrawerContent(navController: NavHostController, currentRoute: String?) {
     Column(
         modifier = Modifier
-        .fillMaxHeight()
-        ) {
+            .fillMaxHeight()
+    ) {
         NavigationItem(
             icon = Icons.Default.Home,
-            label = "Browse",
-            selected = navController.currentDestination?.route == "browse",
-            onClick = { navController.navigate("browse") }
+            label = stringResource(id = R.string.browse),
+            selected = currentRoute == "browse",
+            onClick = {
+                if (currentRoute != "browse") {
+                    navController.navigate("browse") {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            }
         )
         NavigationItem(
             icon = Icons.Default.Star,
-            label = "Watchlist",
-            selected = navController.currentDestination?.route == "watchlist",
-            onClick = { navController.navigate("watchlist") }
-        )
-        NavigationItem(
-            icon = Icons.Default.Person,
-            label = "My Movies",
-            selected = navController.currentDestination?.route == "mymovies",
-            onClick = { navController.navigate("mymovies") }
+            label = stringResource(id = R.string.watchlist),
+            selected = currentRoute == "watchlist",
+            onClick = {
+                if (currentRoute != "watchlist") {
+                    navController.navigate("watchlist") {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            }
         )
     }
 }
@@ -167,7 +188,7 @@ fun AppBottomBar(navController: NavHostController) {
         NavigationBarItem(
             icon = { Icon(Icons.Default.Home, contentDescription = "Browse", tint = MaterialTheme.colorScheme.onPrimary) },
             label = {
-                Text("Browse", style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimary))
+                Text(stringResource(id = R.string.browse), style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimary))
             },
             selected = navController.currentDestination?.route == "browse",
             onClick = { navController.navigate("browse") }
@@ -175,18 +196,10 @@ fun AppBottomBar(navController: NavHostController) {
         NavigationBarItem(
             icon = { Icon(Icons.Default.Star, contentDescription = "Watchlist", tint = MaterialTheme.colorScheme.onPrimary) },
             label = {
-                Text("Watchlist", style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimary))
+                Text(stringResource(id = R.string.watchlist), style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimary))
             },
             selected = navController.currentDestination?.route == "watchlist",
             onClick = { navController.navigate("watchlist") }
-        )
-        NavigationBarItem(
-            icon = { Icon(Icons.Default.Person, contentDescription = "My movies", tint = MaterialTheme.colorScheme.onPrimary) },
-            label = {
-                Text("My movies", style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimary))
-            },
-            selected = navController.currentDestination?.route == "mymovies",
-            onClick = { navController.navigate("mymovies") }
         )
     }
 }
