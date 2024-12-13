@@ -1,5 +1,6 @@
 package com.example.androidsideproject.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -29,7 +30,8 @@ class BrowseViewModel(
     private val genreRepository: GenreRepository,
     private val languageRepository: LanguageRepository,
     private val filterManager: MovieFilterManager,
-    private val watchlistRepository: WatchlistRepository
+    private val watchlistRepository: WatchlistRepository,
+    private val applicationContext: Context
 ) : ViewModel() {
 
     private val _navigationEvent = MutableSharedFlow<String>()
@@ -53,6 +55,15 @@ class BrowseViewModel(
     fun observeMoviesAndWatchlist() {
         viewModelScope.launch {
             try {
+
+                if (!isNetworkAvailable(applicationContext)) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "No internet connection"
+                    )
+                    return@launch
+                }
+
                 val genresFlow = genreRepository.getGenres()
                 val languageFlow = languageRepository.getLanguages()
                 val moviesFlow = movieRepository.getMovies()
@@ -130,14 +141,25 @@ class BrowseViewModel(
                 val languageRepository = application.container.languageRepository
                 val watchlistRepository = application.container.watchlistRepository
                 val filterManager = MovieFilterManager()
+                val applicationContext = application.applicationContext
                 BrowseViewModel(
                     movieRepository = movieRepository,
                     genreRepository = genreRepository,
                     languageRepository = languageRepository,
                     watchlistRepository = watchlistRepository,
                     filterManager = filterManager,
+                    applicationContext = applicationContext
                 )
             }
         }
+    }
+
+    private fun isNetworkAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val networkCapabilities = connectivityManager.activeNetwork?.let { network ->
+            connectivityManager.getNetworkCapabilities(network)
+        }
+
+        return networkCapabilities?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
     }
 }
