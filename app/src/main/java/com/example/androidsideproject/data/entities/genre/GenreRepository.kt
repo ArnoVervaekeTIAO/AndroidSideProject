@@ -8,6 +8,7 @@ import com.example.androidsideproject.network.genre.getGenresAsFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import java.io.IOException
 
 interface GenreRepository {
     fun getGenres(): Flow<List<Genre>>
@@ -31,7 +32,11 @@ class CachingGenreRepository(
     }
 
     override suspend fun insert(item: Genre) {
-        genreDao.insertGenres(listOf(item.getAsGenreDbItem()))
+        try {
+            genreDao.insertGenres(listOf(item.getAsGenreDbItem()))
+        } catch (e: Exception) {
+            throw IOException("Failed to insert genre: ${item.name}", e)
+        }
     }
 
     override suspend fun refresh() {
