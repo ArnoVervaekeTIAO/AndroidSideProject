@@ -35,7 +35,7 @@ class BrowseViewModel(
     private val _navigationEvent = MutableSharedFlow<String>()
     val navigationEvent = _navigationEvent.asSharedFlow()
 
-    private val _uiState = MutableStateFlow(UiState())
+    val _uiState = MutableStateFlow(UiState())
 
     val uiState: StateFlow<UiState> = filterManager.uiState
         .combine(_uiState) { filterState, loadingState ->
@@ -50,7 +50,7 @@ class BrowseViewModel(
         observeMoviesAndWatchlist()
     }
 
-    private fun observeMoviesAndWatchlist() {
+    fun observeMoviesAndWatchlist() {
         viewModelScope.launch {
             try {
                 val genresFlow = genreRepository.getGenres()
